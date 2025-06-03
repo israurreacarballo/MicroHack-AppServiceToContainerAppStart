@@ -62,10 +62,10 @@ jobs:
     - name: Deploy to Container App
       uses: azure/container-apps-deploy-action@v2
       with:
-        imageToDeploy: microhackregistry.azurecr.io/microhackapp:${{ steps.get_tag.outputs.image_tag }}
+        imageToDeploy: microhackuser14.azurecr.io/microhackapp:${{ steps.get_tag.outputs.image_tag }}
         acrUsername: ${{ secrets.ACR_USERNAME }}
         acrPassword: ${{ secrets.ACR_PASSWORD }}
-        resourceGroup: MicroHack-AppServiceToContainerApp
-        containerAppEnvironment: microhack-containerappenvironment
-        containerAppName: microhack-containerapp
+        resourceGroup: user14
+        containerAppEnvironment: managedEnvironment-user14
+        containerAppName: microhack-aiapp-user14
         targetPort: 8080
