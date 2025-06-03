@@ -14,7 +14,7 @@ jobs:
     - name: Login to Azure
       uses: azure/login@v2
       with:
-        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        client-id: d1f9364a-7cdc-4e64-9a94-dd2e96b00cdc
         tenant-id: 12172ac4-726b-4c16-9505-eb8dc39c3ee5
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
@@ -35,7 +35,7 @@ jobs:
     - name: Get Latest Container Image Tag
       id: get_tag
       run: |
-        TAG=$(az acr repository show-tags --name microhackregistry --repository microhackapp --orderby time_desc --output tsv --detail | head -n 1 | awk '{print $4}')
+        TAG=$(az acr repository show-tags --name microhackuser14 --repository microhackapp --orderby time_desc --output tsv --detail | head -n 1 | awk '{print $4}')
         NUMERIC_TAG=$(echo "$TAG" | grep -oE '[0-9]+')
         INCREMENTED_TAG=$((NUMERIC_TAG + 1))
         UPDATED_TAG=$(echo "$TAG" | sed "s/$NUMERIC_TAG/$INCREMENTED_TAG/")
