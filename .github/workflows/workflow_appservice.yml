@@ -1,13 +1,17 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
 name: Build and Deploy to Container App
 
 on:
   workflow_dispatch:
+  
 permissions:
   id-token: write
-
+  
 jobs:
   build:
-    name: Build and test solution
+
     runs-on: ubuntu-latest
 
     steps:
@@ -16,8 +20,8 @@ jobs:
       with:
         client-id: d1f9364a-7cdc-4e64-9a94-dd2e96b00cdc
         tenant-id: 12172ac4-726b-4c16-9505-eb8dc39c3ee5
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
+        subscription-id: 27096270-2382-420f-9c13-df5945cb363e
+    
     - name: Checkout repository
       uses: actions/checkout@v4
       
@@ -35,37 +39,42 @@ jobs:
     - name: Get Latest Container Image Tag
       id: get_tag
       run: |
-        TAG=$(az acr repository show-tags --name microhackuser14 --repository microhackapp --orderby time_desc --output tsv --detail | head -n 1 | awk '{print $4}')
+        TAG=$(az acr repository show-tags --name microhackregistryuser14 --repository microhackapp --orderby time_desc --output tsv --detail | head -n 1 | awk '{print $4}')
         NUMERIC_TAG=$(echo "$TAG" | grep -oE '[0-9]+')
         INCREMENTED_TAG=$((NUMERIC_TAG + 1))
         UPDATED_TAG=$(echo "$TAG" | sed "s/$NUMERIC_TAG/$INCREMENTED_TAG/")
         echo "image_tag=$UPDATED_TAG" >> $GITHUB_OUTPUT
-    - name: Checkout repository
-      uses: actions/checkout@v4
         
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-          dotnet-version: 8.0.x
-          
-    - name: Restore dependencies
-      run: dotnet restore
-        
-    - name: Build with dotnet
-      run: dotnet build --no-restore
     - name: Build and Push Image
       run: |
-          az acr login --name microhackuser14 --username ${{ secrets.ACR_USERNAME }} --password ${{ secrets.ACR_PASSWORD }} &&
-          docker build -t microhackuser14.azurecr.io/microhackapp:1 -f Dockerfile . &&
-          docker push microhackuser14.azurecr.io/microhackapp:1
-
+        az acr login --name microhackregistryuser14 --username ${{ secrets.ACR_USERNAME }} --password ${{ secrets.ACR_PASSWORD }} &&
+        docker build -t microhackregistryuser14.azurecr.io/microhackapp:${{ steps.get_tag.outputs.image_tag }} -f Dockerfile . &&
+        docker push microhackregistryuser14.azurecr.io/microhackapp:${{ steps.get_tag.outputs.image_tag }}
+    
     - name: Deploy to Container App
       uses: azure/container-apps-deploy-action@v2
       with:
-        imageToDeploy: microhackuser14.azurecr.io/microhackapp:${{ steps.get_tag.outputs.image_tag }}
+        imageToDeploy: microhackregistryuser14.azurecr.io/microhackapp:${{ steps.get_tag.outputs.image_tag }}
         acrUsername: ${{ secrets.ACR_USERNAME }}
         acrPassword: ${{ secrets.ACR_PASSWORD }}
         resourceGroup: user14
         containerAppEnvironment: managedEnvironment-user14
         containerAppName: microhack-aiapp-user14
         targetPort: 8080
+        environmentVariables: API_URL=https://microhack-aiapp.yellowdesert-530e9392.spaincentral.azurecontainerapps.io
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --no-restore
+    - name: Test
+      run: dotnet test --no-build --verbosity normal
+    - name: Build and Push Image
+      run: |
+        az acr login --name microhackregistryuser14 --username ${{ secrets.ACR_USERNAME }} --password ${{ secrets.ACR_PASSWORD }} &&
+        docker build -t microhackregistryuser14.azurecr.io/microhackapp:1 -f Dockerfile . &&
+        docker push microhackregistryuser14.azurecr.io/microhackapp:1
